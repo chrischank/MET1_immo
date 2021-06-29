@@ -39,7 +39,10 @@ AOI_Santiago <- osmdata::getbb("Provincia de Santiago", featuretype = "boundarie
                                format_out = "sf_polygon") %>%
   st_transform(AOI_Santiago, crs = 9184)
 
-st_write(AOI_Santiago, dsn = file.path(vector_path, "AOI_Santiago.geojson"), driver = "GeoJSON")
+st_write(AOI_Santiago, dsn = file.path(vector_path, "AOI_Santiago.geojson"),
+         driver = "GeoJSON", append = FALSE)
+
+AOI_Santiago <- readOGR(file.path(vector_path, "AOI_Santiago.geojson"))
 
 #########################
 
@@ -48,16 +51,51 @@ AOI_las_condes <- osmdata::getbb("Las Condes", featuretype = "boundaries",
                                  format_out = "sf_polygon") %>%
   st_transform(AOI_las_condes, crs = 9184)
 
+AOI_LC_res <- opq(bbox = AOI_las_condes) %>% 
+  add_osm_feature(key = "building", value = c("apartments", "detached",
+                                              "semidetached_house", "house",
+                                              "hut")) %>% 
+  osmdata_sf()
+
+AOI_LC_res$osm_multipolygons$osm_id %>% 
+  as_data_frame()
+
+(ggplot() +
+    geom_polygon(data = AOI_LC_res$osm_multipolygons$osm_id,
+                 aes(x = x, y = y, group = group,
+                     fill = AOI_LC_res$osm_multipolygons$building),
+                 color = "black", size = 0.5) +
+    theme_classic() +
+    theme(legend.position="bottom") +
+    theme(legend.title=element_blank()) + 
+    xlab("Longitude") +
+    ylab("Latitude") + 
+    coord_quickmap())
+
+##########################
+
 AOI_san_miguel <- osmdata::getbb("San Miguel", featuretype = "boundaries",
                                  display_name_contains = "Santiago",
                                  format_out = "sf_polygon") %>%
   st_transform(AOI_san_miguel, crs = 9184)
+
+###########################
 
 AOI_puente_alto <- osmdata::getbb("Puente Alto", featuretype = "boundaries",
                                   display_name_contains = "Santiago",
                                   format_out = "sf_polygon") %>%
   st_transform(AOI_puente_alto, crs = 9184)
 
-st_write(AOI_las_condes, dsn = file.path(vector_path, "AOI_LC.geojson"), driver = "GeoJSON")
-st_write(AOI_san_miguel, dsn = file.path(vector_path, "AOI_SM.geojson"), driver = "GeoJSON")
-st_write(AOI_puente_alto, dsn = file.path(vector_path, "AOI_PA.geojson"), driver = "GeoJSON")
+# Write and read AOI locally as SPDFs
+st_write(AOI_las_condes, dsn = file.path(vector_path, "AOI_LC.geojson"),
+         driver = "GeoJSON", append = FALSE)
+st_write(AOI_san_miguel, dsn = file.path(vector_path, "AOI_SM.geojson"),
+         driver = "GeoJSON", append = FALSE)
+st_write(AOI_puente_alto, dsn = file.path(vector_path, "AOI_PA.geojson"),
+         driver = "GeoJSON", append = FALSE)
+
+AOI_las_condes <- readOGR(file.path(vector_path, "AOI_LC.geojson"))
+AOI_san_miguel <- readOGR(file.path(vector_path, "AOI_SM.geojson"))
+AOI_puente_alto <- readOGR(file.path(vector_path, "AOI_PA.geojson"))
+
+plot(AOI_las_condes)
