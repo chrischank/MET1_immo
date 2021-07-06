@@ -77,12 +77,13 @@ AOI_LC_res <- st_transform(AOI_LC_res, crs = 9184)
 AOI_LC_amy <- opq(bbox = AOI_las_condes) %>% 
   add_osm_feature(key = "amenity", value = c("college", "library",
                                               "university", "cafe",
-                                              "restaurabt", "bar", 
+                                              "restaurant", "bar", 
                                               "bank", "hospital", 
                                               "clinic", "arts_centre",
                                               "theatre", "fire_station", 
                                               "police", "place_of_worship",
-                                              "marketplace", "conference_centre")) %>% 
+                                              "marketplace", "conference_centre",
+                                              "grave_yard")) %>% 
   osmdata_sf()
 
 glimpse(AOI_LC_amy$osm_polygons)
@@ -186,12 +187,13 @@ plot(AOI_SM_res["building"])
 AOI_SM_amy <- opq(bbox = AOI_san_miguel) %>% 
   add_osm_feature(key = "amenity", value = c("college", "library",
                                              "university", "cafe",
-                                             "restaurabt", "bar", 
+                                             "restaurant", "bar", 
                                              "bank", "hospital", 
                                              "clinic", "arts_centre",
                                              "theatre", "fire_station", 
                                              "police", "place_of_worship",
-                                             "marketplace", "conference_centre")) %>% 
+                                             "marketplace", "conference_centre",
+                                             "grave_yard")) %>% 
   osmdata_sf()
 
 glimpse(AOI_SM_amy$osm_polygons)
@@ -295,12 +297,13 @@ plot(AOI_PA_res["building"])
 AOI_PA_amy <- opq(bbox = AOI_puente_alto) %>% 
   add_osm_feature(key = "amenity", value = c("college", "library",
                                              "university", "cafe",
-                                             "restaurabt", "bar", 
+                                             "restaurant", "bar", 
                                              "bank", "hospital", 
                                              "clinic", "arts_centre",
                                              "theatre", "fire_station", 
                                              "police", "place_of_worship",
-                                             "marketplace", "conference_centre")) %>% 
+                                             "marketplace", "conference_centre",
+                                             "grave_yard")) %>% 
   osmdata_sf()
 
 glimpse(AOI_PA_amy$osm_polygons)
@@ -388,5 +391,7 @@ AOI_SM_Street <- readOGR(file.path(vector_path, "AOI_SM_Street.geojson"))
 AOI_PA_Street <- readOGR(file.path(vector_path, "AOI_PA_Street.geojson"))
 
 # Raster pre-processing ----
-
+L2A_20210702 <- file.path(raster_path, "MASK_S2B_MSIL2A_20210702T143729_N0301_R096_T19HCD_20210702T184552",
+                          "") %>% 
+  raster()
 
