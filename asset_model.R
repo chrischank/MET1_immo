@@ -8,7 +8,7 @@
 setwd("C:/Users/Chris/Dropbox/EAGLE_Assessments/MET1_Model/MET1_immo/")
 
 pkgs <- c("tidyverse", "rgdal", "RStoolbox", "sf", "rasterVis", "ggmap", "viridis", "osmdata",
-          "tmap", "RColorBrewer")
+          "tmap", "RColorBrewer", "Hmics", "reticulate")
 
 for (i in pkgs){
   if (!require(i, character.only = TRUE)){
@@ -390,8 +390,51 @@ AOI_LC_Street <- readOGR(file.path(vector_path, "AOI_LC_Street.geojson"))
 AOI_SM_Street <- readOGR(file.path(vector_path, "AOI_SM_Street.geojson"))
 AOI_PA_Street <- readOGR(file.path(vector_path, "AOI_PA_Street.geojson"))
 
-# Raster pre-processing ----
-L2A_20210702 <- file.path(raster_path, "MASK_S2B_MSIL2A_20210702T143729_N0301_R096_T19HCD_20210702T184552",
-                          "") %>% 
-  raster()
 
+# Pre-processing for Census 2017, Crime, 
+
+# Census-2017
+
+census_path <- file.path(vector_path, "Censo2017_16R_ManzanaEntidad_CSV/Censo2017_Manzanas_write.csv")
+census_2017 <- read_csv(census_path)
+
+str(census_2017)
+summary(census_2017)
+
+censusF_2017 <- census_2017 %>% 
+  groupby()
+
+# Crime
+
+crime <- readOGR(file.path(vector_path, "delitos_por_cuadrantePolygon.shp"))
+summary(crime)
+plot(crime)
+
+# 
+
+# Raster pre-processing ----
+L2A_20210704_path <- file.path(raster_path, "MASK_S2A_MSIL2A_20210704T142731_N0301_R053_T19HCD_20210704T181414")
+L2A_20210702_path <- file.path(raster_path, "MASK_S2B_MSIL2A_20210702T143729_N0301_R096_T19HCC_20210702T184552")
+
+#############################################
+#run class_funs.py script to convert jp2tiff#
+#############################################
+
+b1 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B01_60m.tif'))
+b2 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B02_10m.tif'))
+b3 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B03_10m.tif'))
+b4 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B04_10m.tif'))
+b5 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B05_20m.tif'))
+b6 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B06_20m.tif'))
+b7 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B07_20m.tif'))
+b8A <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B8A_20m.tif'))
+b8 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B08_10m.tif'))
+b9 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B09_60m.tif'))
+#b10 <- raster(file.path(L2A_20210702_path, 'MASK_Level-2A_B10_m.tif'))
+b11 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B11_20m.tif'))
+b12 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B12_20m.tif'))
+
+RGB_20210704 <- stack(b2, b3, b4) %>% 
+  projectRaster(RGB_20210704, crs = 9184)
+
+plot(RGB_20210704)
