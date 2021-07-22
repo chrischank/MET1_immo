@@ -29,15 +29,11 @@ raster_path <- file.path(getwd(), "Raster")
 #BBox Santiago de Chile#
 ########################
 
-AOI_Santiago <- osmdata::getbb("Provincia de Santiago", featuretype = "boundaries",
-                               format_out = "sf_polygon") %>%
-  st_transform(AOI_Santiago, crs = 9184)
-
-st_write(AOI_Santiago, dsn = file.path(vector_path, "AOI_Santiago.geojson"),
-         driver = "GeoJSON", append = FALSE)
-
 AOI_Santiago <- readOGR(file.path(vector_path, "AOI_Santiago.geojson"))
+AOI_Santiago <- spTransform(AOI_Santiago, CRS("+init=epsg:9184"))
 
+plot(AOI_Santiago)
+  
 ################################
 #BBox Las Condes & OSM features#
 ################################
@@ -64,13 +60,13 @@ AOI_LC_res <- bind_rows(st_cast(AOI_LC_res$osm_polygons, "MULTIPOLYGON"),
 
 AOI_LC_res <- st_transform(AOI_LC_res, crs = 9184)
 
-(tm_basemap(leaflet::providers$CartoDB.DarkMatter) +
-    tm_shape(AOI_LC_res) +
-    tm_sf(col = "building",
-          title = "LC_residential_type",
-          palette = RColorBrewer::brewer.pal("building", "Accent"),
-          tm_scale_bar())
-)
+#(tm_basemap(leaflet::providers$CartoDB.DarkMatter) +
+#    tm_shape(AOI_LC_res) +
+#    tm_sf(col = "building",
+#          title = "LC_residential_type",
+#          palette = RColorBrewer::brewer.pal("building", "Accent"),
+#          tm_scale_bar())
+#)
 
 # AMENITIES (Paired)
 
@@ -95,13 +91,13 @@ AOI_LC_amy <- bind_rows(st_cast(AOI_LC_amy$osm_polygons, "MULTIPOLYGON"),
 
 AOI_LC_amy <- st_transform(AOI_LC_amy, crs = 9184)
 
-(tm_basemap(leaflet::providers$CartoDB.DarkMatter) +
-    tm_shape(AOI_LC_amy) +
-    tm_sf(col = "amenity",
-          title = "LC_amenity_type",
-          palette = RColorBrewer::brewer.pal("amenity", "Paired"),
-          tm_scale_bar())
-)
+#(tm_basemap(leaflet::providers$CartoDB.DarkMatter) +
+#    tm_shape(AOI_LC_amy) +
+#    tm_sf(col = "amenity",
+#          title = "LC_amenity_type",
+#          palette = RColorBrewer::brewer.pal("amenity", "Paired"),
+#          tm_scale_bar())
+#)
 
 
 # LEISURE (Pastel1)
@@ -123,13 +119,13 @@ AOI_LC_les <- bind_rows(st_cast(AOI_LC_les$osm_polygons, "MULTIPOLYGON"),
 
 AOI_LC_les <- st_transform(AOI_LC_les, crs = 9184)
 
-(tm_basemap(leaflet::providers$CartoDB.DarkMatter) +
-    tm_shape(AOI_LC_les) +
-    tm_sf(col = "leisure",
-          title = "LC_leisure_type",
-          palette = RColorBrewer::brewer.pal("leisure", "Pastel1"),
-          tm_scale_bar())
-)
+#(tm_basemap(leaflet::providers$CartoDB.DarkMatter) +
+#    tm_shape(AOI_LC_les) +
+#    tm_sf(col = "leisure",
+#          title = "LC_leisure_type",
+#          palette = RColorBrewer::brewer.pal("leisure", "Pastel1"),
+#          tm_scale_bar())
+#)
 
 # STREETS
 
@@ -174,13 +170,13 @@ AOI_SM_res <- st_transform(AOI_SM_res, crs = 9184)
 
 plot(AOI_SM_res["building"])
 
-(tm_basemap(leaflet::providers$CartoDB.DarkMatter) + # add Stamen Terrain basemap
-    tm_shape(AOI_SM_res) + # add the sf
-    tm_sf(col = "building", # colour by green space type
-          title = "SM_residential_type", # no legend title
-          palette = RColorBrewer::brewer.pal("building", "Accent"), # custom fill colours
-          tm_scale_bar()) # add scale bar
-)
+#(tm_basemap(leaflet::providers$CartoDB.DarkMatter) + # add Stamen Terrain basemap
+#    tm_shape(AOI_SM_res) + # add the sf
+#    tm_sf(col = "building", # colour by green space type
+#          title = "SM_residential_type", # no legend title
+#          palette = RColorBrewer::brewer.pal("building", "Accent"), # custom fill colours
+#          tm_scale_bar()) # add scale bar
+#)
 
 # AMENITIES
 
@@ -205,13 +201,13 @@ AOI_SM_amy <- bind_rows(st_cast(AOI_SM_amy$osm_polygons, "MULTIPOLYGON"),
 
 AOI_SM_amy <- st_transform(AOI_SM_amy, crs = 9184)
 
-(tm_basemap(leaflet::providers$CartoDB.DarkMatte) +
-    tm_shape(AOI_SM_amy) +
-    tm_sf(col = "amenity",
-          title = "SM_amenity_type",
-          palette = RColorBrewer::brewer.pal("amenity", "Paired"),
-          tm_scale_bar())
-)
+#(tm_basemap(leaflet::providers$CartoDB.DarkMatte) +
+#    tm_shape(AOI_SM_amy) +
+#    tm_sf(col = "amenity",
+#          title = "SM_amenity_type",
+#          palette = RColorBrewer::brewer.pal("amenity", "Paired"),
+#          tm_scale_bar())
+#)
 
 # LEISURE
 
@@ -232,13 +228,13 @@ AOI_SM_les <- bind_rows(st_cast(AOI_SM_les$osm_polygons, "MULTIPOLYGON"),
 
 AOI_SM_les <- st_transform(AOI_SM_les, crs = 9184)
 
-(tm_basemap(leaflet::providers$CartoDB.DarkMatte) +
-    tm_shape(AOI_SM_les) +
-    tm_sf(col = "leisure",
-          title = "SM_leisure_type",
-          palette = RColorBrewer::brewer.pal("leisure", "Pastel1"),
-          tm_scale_bar())
-)
+#(tm_basemap(leaflet::providers$CartoDB.DarkMatte) +
+#    tm_shape(AOI_SM_les) +
+#    tm_sf(col = "leisure",
+#          title = "SM_leisure_type",
+#          palette = RColorBrewer::brewer.pal("leisure", "Pastel1"),
+#          tm_scale_bar())
+#)
 
 # STREETS
 
@@ -284,13 +280,13 @@ AOI_PA_res <- st_transform(AOI_PA_res, crs = 9184)
 
 plot(AOI_PA_res["building"])
 
-(tm_basemap(leaflet::providers$CartoDB.DarkMatte) + # add Stamen Terrain basemap
-    tm_shape(AOI_PA_res) + # add the sf
-    tm_sf(col = "building", # colour by green space type
-          title = "PA_residential_type", # no legend title
-          palette = RColorBrewer::brewer.pal("building", "Accent"), # custom fill colours
-          tm_scale_bar()) # add scale bar
-)
+#(tm_basemap(leaflet::providers$CartoDB.DarkMatte) + # add Stamen Terrain basemap
+#    tm_shape(AOI_PA_res) + # add the sf
+#    tm_sf(col = "building", # colour by green space type
+#          title = "PA_residential_type", # no legend title
+#          palette = RColorBrewer::brewer.pal("building", "Accent"), # custom fill colours
+#          tm_scale_bar()) # add scale bar
+#)
 
 # AMENITIES
 
@@ -315,13 +311,13 @@ AOI_PA_amy <- bind_rows(st_cast(AOI_PA_amy$osm_polygons, "MULTIPOLYGON"),
 
 AOI_PA_amy <- st_transform(AOI_PA_amy, crs = 9184)
 
-(tm_basemap(leaflet::providers$CartoDB.DarkMatte) +
-    tm_shape(AOI_PA_amy) +
-    tm_sf(col = "amenity",
-          title = "PA_amenity_type",
-          palette = RColorBrewer::brewer.pal("amenity", "Paired"),
-          tm_scale_bar())
-)
+#(tm_basemap(leaflet::providers$CartoDB.DarkMatte) +
+#    tm_shape(AOI_PA_amy) +
+#    tm_sf(col = "amenity",
+#          title = "PA_amenity_type",
+#          palette = RColorBrewer::brewer.pal("amenity", "Paired"),
+#          tm_scale_bar())
+#)
 
 # LEISURE
 
@@ -342,13 +338,13 @@ AOI_PA_les <- bind_rows(st_cast(AOI_PA_les$osm_polygons, "MULTIPOLYGON"),
 
 AOI_PA_les <- st_transform(AOI_PA_les, crs = 9184)
 
-(tm_basemap(leaflet::providers$CartoDB.DarkMatte) +
-    tm_shape(AOI_PA_les) +
-    tm_sf(col = "leisure",
-          title = "PA_leisure_type",
-          palette = RColorBrewer::brewer.pal("amenity", "Paired"),
-          tm_scale_bar())
-)
+#(tm_basemap(leaflet::providers$CartoDB.DarkMatte) +
+#    tm_shape(AOI_PA_les) +
+#    tm_sf(col = "leisure",
+#          title = "PA_leisure_type",
+#          palette = RColorBrewer::brewer.pal("amenity", "Paired"),
+#          tm_scale_bar())
+#)
 
 # STREETS
 
@@ -367,6 +363,8 @@ AOI_PA_Street <- spTransform(AOI_PA_Street, crs("+init=epsg:9184"))
 
 # Write and read AOI locally as SPDFs
 
+st_write(AOI_Santiago, dsn = file.path(vector_path, "AOI_Santiago.geojson"),
+         driver = "GeoJSON", append = FALSE)
 st_write(AOI_las_condes, dsn = file.path(vector_path, "AOI_LC.geojson"),
          driver = "GeoJSON", append = FALSE)
 st_write(AOI_san_miguel, dsn = file.path(vector_path, "AOI_SM.geojson"),
@@ -390,8 +388,7 @@ AOI_LC_Street <- readOGR(file.path(vector_path, "AOI_LC_Street.geojson"))
 AOI_SM_Street <- readOGR(file.path(vector_path, "AOI_SM_Street.geojson"))
 AOI_PA_Street <- readOGR(file.path(vector_path, "AOI_PA_Street.geojson"))
 
-
-# Pre-processing for Census 2017, Crime, 
+# Pre-processing for Census 2017, Crime, Base price
 
 # Census-2017
 
@@ -402,39 +399,92 @@ str(census_2017)
 summary(census_2017)
 
 censusF_2017 <- census_2017 %>% 
-  groupby()
+  groupby("COMUNA", "")
 
 # Crime
 
 crime <- readOGR(file.path(vector_path, "delitos_por_cuadrantePolygon.shp"))
 summary(crime)
-plot(crime)
 
-# 
+(crime_plot <- ggplot(crime, aes(x=)))
 
-# Raster pre-processing ----
-L2A_20210704_path <- file.path(raster_path, "MASK_S2A_MSIL2A_20210704T142731_N0301_R053_T19HCD_20210704T181414")
-L2A_20210702_path <- file.path(raster_path, "MASK_S2B_MSIL2A_20210702T143729_N0301_R096_T19HCC_20210702T184552")
+
+# Base price
+base_price <- readOGR()
+
+# RASTER PRE-PROCESSING ----
+
+L2A_20210717_path <- file.path(raster_path, "MASK_S2A_MSIL2A_20210717T143731_N0301_R096_T19HCD_20210717T182511")
+L2A_20210717_path %>% list.files()
 
 #############################################
 #run class_funs.py script to convert jp2tiff#
 #############################################
 
-b1 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B01_60m.tif'))
-b2 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B02_10m.tif'))
-b3 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B03_10m.tif'))
-b4 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B04_10m.tif'))
-b5 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B05_20m.tif'))
-b6 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B06_20m.tif'))
-b7 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B07_20m.tif'))
-b8A <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B8A_20m.tif'))
-b8 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B08_10m.tif'))
-b9 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B09_60m.tif'))
-#b10 <- raster(file.path(L2A_20210702_path, 'MASK_Level-2A_B10_m.tif'))
-b11 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B11_20m.tif'))
-b12 <- raster(file.path(L2A_20210702_path, 'Mask_Level-2A_B12_20m.tif'))
+# Unfortunately the AOI lies between 2 scenes
+# Therefore, it is requried to load and mosaic 3 sets of 2 scenes
 
-RGB_20210704 <- stack(b2, b3, b4) %>% 
-  projectRaster(RGB_20210704, crs = 9184)
+tif_20210717A_path <- file.path(raster_path, "20210717T143731_20210717T144707_T19HCC.tif")
+tif_20210717A <- raster(tif_20210717A_path)
 
-plot(RGB_20210704)
+tif_20210717B_path <- file.path(raster_path, "20210717T143731_20210717T144707_T19HCD.tif")
+tif_20210717B <- raster(tif_20210717B_path)
+
+# Distribution of pixel
+
+par(mfrow = c(1, 2))
+boxplot(values(tif_20210717A))
+boxplot(values(tif_20210717B))
+
+##############################################
+#Snow mask and restretch pixels before mosaic#
+##############################################
+
+# Normalised Difference Snow index for snow mask (Hall & Riggs, 2010)
+# b11 & b8 for Sentinel 2
+# b11 ~ 20m res.
+# b8 ~ 10m res.
+
+A_b11_SWIR <- raster(tif_20210717A_path, band = 11)
+A_b8_NIR <- raster(tif_20210717A_path, band = 8)
+B_b11_SWIR <- raster(tif_20210717B_path, band = 11)
+B_b8_NIR <- raster(tif_20210717B_path, band = 8)
+
+# Upsampling of b11 to 10m resolution before further computation
+
+A_b11_SWIR <- resample(A_b11_SWIR, A_b8_NIR)
+B_b11_SWIR <- resample(B_b11_SWIR, B_b8_NIR)
+
+plot(A_b11_SWIR)
+plot(A_b8_NIR)
+
+# Create NDSI function
+
+NDSI_fun <- function(NIR, SWIR){
+  (NIR-SWIR)/(NIR+SWIR)
+}
+
+NDSI_20210717A <- NDSI_fun(A_b8_NIR, A_b11_SWIR)
+NDSI_20210717B <- NDSI_fun(B_b8_NIR, B_b11_SWIR)
+
+# Reclassify to remove -inf to 0.4
+NDSI_20210717A <- reclassify(NDSI_20210717A, cbind(-Inf, 0.4, NA))
+NDSI_20210717B <- reclassify(NDSI_20210717B, cbind(-Inf, 0.4, NA))
+
+plot(NDSI_20210717A, col = RColorBrewer::brewer.pal(3, "Greys"))
+plot(NDSI_20210717B, col = RColorBrewer::brewer.pal(3, "Greys"))
+
+# Apply snow mask
+
+
+# Mosaic
+
+tif_20210717
+
+RStoolbox::histMatch()
+
+
+#ggRGB(RGB_20210717, r=3, g=2, b=1, stretch="hist")
+
+
+
