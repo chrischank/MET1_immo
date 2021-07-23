@@ -424,15 +424,16 @@ L2A_20210717_path %>% list.files()
 # Unfortunately the AOI lies between 2 scenes
 # Therefore, it is requried to load and mosaic 3 sets of 2 scenes
 
-tif_20210717A <- file.path(raster_path, "20210717T143731_20210717T144707_T19HCC.tif") %>% 
-  raster()
-
 tif_20210717A_path <- file.path(raster_path, "20210717T143731_20210717T144707_T19HCC.tif")
 
-tif_20210717B <- file.path(raster_path, "20210717T143731_20210717T144707_T19HCD.tif") %>% 
-  raster()
+tif_20210717A <- file.path(tif_20210717A_path) %>% 
+  stack()
 
-tif_20210717A_path <- file.path(raster_path, "20210717T143731_20210717T144707_T19HCD.tif")
+tif_20210717B_path <- file.path(raster_path, "20210717T143731_20210717T144707_T19HCD.tif")
+
+tif_20210717B <- file.path(tif_20210717B_path) %>% 
+  stack()
+
 
 # Distribution of pixel
 
@@ -440,32 +441,38 @@ par(mfrow = c(1, 2))
 boxplot(values(tif_20210717A))
 boxplot(values(tif_20210717B))
 
-tif_20210717A_Spath <- file.path(raster_path, "Split_20210717A")
-tif_20210717B_Spath <- file.path(raster_path, "Split_20210717B")
+#tif_20210717A_Spath <- file.path(raster_path, "Split_20210717A")
+#tif_20210717B_Spath <- file.path(raster_path, "Split_20210717B")
 
-if (file.exists(tif_20210717A_Spath)){
-  print("Dir for split band exists")
-  setwd(tif_20210717A_Spath)
-  writeRaster(tif_20210717A, file.path(getwd(), "Split_20210717A"), format = "GTiff", 
-              bylayer = TRUE, overwrite = TRUE, suffix = nlayers())
-} else {
-  dir.create(tif_20210717A_Spath)
-  setwd(tif_20210717A_Spath)
-  writeRaster(tif_20210717A, file.path(getwd(), "Split_20210717A"), format = "GTiff", 
-              bylayer = TRUE, overwrite = TRUE, suffix = nlayers())
-}
+#if (file.exists(tif_20210717A_Spath)){
+#  print("Dir for split band exists")
+#  setwd(tif_20210717A_Spath)
+#  writeRaster(tif_20210717A, file.path(getwd(), "Split_20210717A"), format = "GTiff", 
+#              bylayer = TRUE, overwrite = TRUE, suffix = nlayers())
+#} else {
+#  dir.create(tif_20210717A_Spath)
+#  setwd(tif_20210717A_Spath)
+#  writeRaster(tif_20210717A, file.path(getwd(), "Split_20210717A"), format = "GTiff", 
+#              bylayer = TRUE, overwrite = TRUE, suffix = nlayers())
+#}
 
-if (file.exists(tif_20210717B_Spath)){
-  print("Dir for split band exists")
-  setwd(tif_20210717B_Spath)
-  writeRaster(tif_20210717B, file.path(getwd(), "Split_20210717B"), format = "GTiff", 
-              bylayer = TRUE, overwrite = TRUE, suffix = nlayers())
-} else {
-  dir.create(tif_20210717B_Spath)
-  setwd(tif_20210717B_Spath)
-  writeRaster(tif_20210717B, file.path(getwd(), "Split_20210717B"), format = "GTiff", 
-              bylayer = TRUE, overwrite = TRUE, suffix = nlayers())
-}
+#if (file.exists(tif_20210717B_Spath)){
+#  print("Dir for split band exists")
+#  setwd(tif_20210717B_Spath)
+#  writeRaster(tif_20210717B, file.path(getwd(), "Split_20210717B"), format = "GTiff", 
+#              bylayer = TRUE, overwrite = TRUE, suffix = nlayers())
+#} else {
+#  dir.create(tif_20210717B_Spath)
+#  setwd(tif_20210717B_Spath)
+#  writeRaster(tif_20210717B, file.path(getwd(), "Split_20210717B"), format = "GTiff", 
+#              bylayer = TRUE, overwrite = TRUE, suffix = nlayers())
+#}
+
+#tif_20210717A_st <- file.path(tif_20210717A_Spath, "Split_20210717A.tif") %>% 
+#  stack()
+
+#tif_20210717B_st <- file.path(tif_20210717A_Spath, "Split_20210717A.tif") %>% 
+#  stack()
 
 ##############################################
 #Snow mask and restretch pixels before mosaic#
@@ -515,6 +522,8 @@ writeRaster(NDSI_20210717B, file.path(raster_path, "NDSI_20210717B"), format="GT
 tif_20210717A_mask <- mask(tif_20210717A, NDSI_20210717A, inverse=TRUE, maskvalue=NA)
 tif_20210717B_mask <- mask(tif_20210717B, NDSI_20210717B, inverse=TRUE, maskvalue=NA)
 
+nlayers(tif_20210717B_mask)
+
 # Plot to check masking
 par(mfrow = c(1, 2))
 plot(tif_20210717A_mask)
@@ -526,7 +535,8 @@ writeRaster(tif_20210717B_mask, file.path(raster_path, "20210717B_mask"), format
 #############
 #Clear Cache#
 #############
-rm(A_b11_SWIR, A_b8_NIR, B_b11_SWIR, B_b8_NIR, tif_20210717A_path, tif_20210717B_path)
+rm(A_b11_SWIR, A_b8_NIR, B_b11_SWIR, B_b8_NIR, tif_20210717A_path, tif_20210717B_path,
+   tif_20210717A, tif_20210717B)
 
 #############
 
@@ -535,12 +545,10 @@ mask20210717A <- file.path(raster_path, "20210717A_mask.tif") %>%
 mask20210717B <- file.path(raster_path, "20210717B_mask.tif") %>% 
   stack()
 
-R_maskA <- raster(mask20210717A_path, band=4)
-G_maskA <- raster(mask20210717A_path, band=3)
-B_maskA <- raster(mask20210717A_path, band=2)
+nlayers(mask20210717A)
 
-
-ggRGB(tif_20210717A_mask, r=4, g=3, b=2)
+ggRGB(mask20210717A, r=4, g=3, b=2, stretch = "hist")
+ggRGB(mask20210717B, r=4, g=3, b=2, stretch = "hist")
 
 # Mosaic
 
