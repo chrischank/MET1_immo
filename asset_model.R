@@ -406,7 +406,7 @@ censusF_2017 <- census_2017 %>%
 crime <- readOGR(file.path(vector_path, "delitos_por_cuadrantePolygon.shp"))
 summary(crime)
 
-(crime_plot <- ggplot(crime, aes(x=)))
+#(crime_plot <- ggplot(crime, aes(x=)))
 
 
 # Base price
@@ -424,17 +424,48 @@ L2A_20210717_path %>% list.files()
 # Unfortunately the AOI lies between 2 scenes
 # Therefore, it is requried to load and mosaic 3 sets of 2 scenes
 
-tif_20210717A_path <- file.path(raster_path, "20210717T143731_20210717T144707_T19HCC.tif")
-tif_20210717A <- raster(tif_20210717A_path)
+tif_20210717A <- file.path(raster_path, "20210717T143731_20210717T144707_T19HCC.tif") %>% 
+  raster()
 
-tif_20210717B_path <- file.path(raster_path, "20210717T143731_20210717T144707_T19HCD.tif")
-tif_20210717B <- raster(tif_20210717B_path)
+tif_20210717A_path <- file.path(raster_path, "20210717T143731_20210717T144707_T19HCC.tif")
+
+tif_20210717B <- file.path(raster_path, "20210717T143731_20210717T144707_T19HCD.tif") %>% 
+  raster()
+
+tif_20210717A_path <- file.path(raster_path, "20210717T143731_20210717T144707_T19HCD.tif")
 
 # Distribution of pixel
 
 par(mfrow = c(1, 2))
 boxplot(values(tif_20210717A))
 boxplot(values(tif_20210717B))
+
+tif_20210717A_Spath <- file.path(raster_path, "Split_20210717A")
+tif_20210717B_Spath <- file.path(raster_path, "Split_20210717B")
+
+if (file.exists(tif_20210717A_Spath)){
+  print("Dir for split band exists")
+  setwd(tif_20210717A_Spath)
+  writeRaster(tif_20210717A, file.path(getwd(), "Split_20210717A"), format = "GTiff", 
+              bylayer = TRUE, overwrite = TRUE, suffix = nlayers())
+} else {
+  dir.create(tif_20210717A_Spath)
+  setwd(tif_20210717A_Spath)
+  writeRaster(tif_20210717A, file.path(getwd(), "Split_20210717A"), format = "GTiff", 
+              bylayer = TRUE, overwrite = TRUE, suffix = nlayers())
+}
+
+if (file.exists(tif_20210717B_Spath)){
+  print("Dir for split band exists")
+  setwd(tif_20210717B_Spath)
+  writeRaster(tif_20210717B, file.path(getwd(), "Split_20210717B"), format = "GTiff", 
+              bylayer = TRUE, overwrite = TRUE, suffix = nlayers())
+} else {
+  dir.create(tif_20210717B_Spath)
+  setwd(tif_20210717B_Spath)
+  writeRaster(tif_20210717B, file.path(getwd(), "Split_20210717B"), format = "GTiff", 
+              bylayer = TRUE, overwrite = TRUE, suffix = nlayers())
+}
 
 ##############################################
 #Snow mask and restretch pixels before mosaic#
@@ -471,11 +502,45 @@ NDSI_20210717B <- NDSI_fun(B_b8_NIR, B_b11_SWIR)
 NDSI_20210717A <- reclassify(NDSI_20210717A, cbind(-Inf, 0.4, NA))
 NDSI_20210717B <- reclassify(NDSI_20210717B, cbind(-Inf, 0.4, NA))
 
-plot(NDSI_20210717A, col = RColorBrewer::brewer.pal(3, "Greys"))
-plot(NDSI_20210717B, col = RColorBrewer::brewer.pal(3, "Greys"))
+plot(NDSI_20210717A, col = RColorBrewer::brewer.pal(3, "Blues"))
+plot(NDSI_20210717B, col = RColorBrewer::brewer.pal(3, "Blues"))
+
+writeRaster(NDSI_20210717A, file.path(raster_path, "NDSI_20210717A"), format="GTiff", overwrite=TRUE)
+writeRaster(NDSI_20210717B, file.path(raster_path, "NDSI_20210717B"), format="GTiff", overwrite=TRUE)
+
+#tif_20210717A <- brick(tif_20210717A)
+#tif_20210717B <- brick(tif_20210717B)
 
 # Apply snow mask
+tif_20210717A_mask <- mask(tif_20210717A, NDSI_20210717A, inverse=TRUE, maskvalue=NA)
+tif_20210717B_mask <- mask(tif_20210717B, NDSI_20210717B, inverse=TRUE, maskvalue=NA)
 
+# Plot to check masking
+par(mfrow = c(1, 2))
+plot(tif_20210717A_mask)
+plot(tif_20210717B_mask)
+
+writeRaster(tif_20210717A_mask, file.path(raster_path, "20210717A_mask"), format="GTiff", overwrite=TRUE)
+writeRaster(tif_20210717B_mask, file.path(raster_path, "20210717B_mask"), format="GTiff", overwrite=TRUE)
+
+#############
+#Clear Cache#
+#############
+rm(A_b11_SWIR, A_b8_NIR, B_b11_SWIR, B_b8_NIR, tif_20210717A_path, tif_20210717B_path)
+
+#############
+
+mask20210717A <- file.path(raster_path, "20210717A_mask.tif") %>% 
+  stack()
+mask20210717B <- file.path(raster_path, "20210717B_mask.tif") %>% 
+  stack()
+
+R_maskA <- raster(mask20210717A_path, band=4)
+G_maskA <- raster(mask20210717A_path, band=3)
+B_maskA <- raster(mask20210717A_path, band=2)
+
+
+ggRGB(tif_20210717A_mask, r=4, g=3, b=2)
 
 # Mosaic
 
