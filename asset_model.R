@@ -1,8 +1,8 @@
 ###########################################################################
 #Asset price exploration and prediction on 3 communes of Santiago de Chile#
 #Maintainer: Christopher Chan                                             #
-#Date: 2021-06-30                                                         #
-#Version: 0.0.3                                                           #
+#Date: 2021-07-24                                                         #
+#Version: 0.0.4                                                           #
 ###########################################################################
 
 setwd("C:/Users/Chris/Dropbox/EAGLE_Assessments/MET1_Model/MET1_immo/")
@@ -390,27 +390,68 @@ AOI_PA_Street <- readOGR(file.path(vector_path, "AOI_PA_Street.geojson"))
 
 # Pre-processing for Census 2017, Crime, Base price
 
-# Census-2017
+# Census_2017 Data
 
-census_path <- file.path(vector_path, "Censo2017_16R_ManzanaEntidad_CSV/Censo2017_Manzanas_write.csv")
-census_2017 <- read_csv(census_path)
+census_2017 <- file.path(vector_path, "Censo2017_16R_ManzanaEntidad_CSV/Censo2017_Manzanas_write.csv") %>% 
+  read_csv()
 
 str(census_2017)
-summary(census_2017)
+head(census_2017)
 
-censusF_2017 <- census_2017 %>% 
-  groupby("COMUNA", "")
+# Split 2017 Census data by Comunas
 
-# Crime
+census_2017_ls <- census_2017 %>% 
+  split(.$COMUNA)
 
-crime <- readOGR(file.path(vector_path, "delitos_por_cuadrantePolygon.shp"))
-summary(crime)
+census_LC <- census_2017_ls$`13128`
 
-#(crime_plot <- ggplot(crime, aes(x=)))
+# Crime Data
 
+crime <- file.path(vector_path, "delitos_por_cuadrantePolygon.shp") %>% 
+  readOGR()
+
+# Split crime SPDF into multiple SPDF groupby Comunas
+
+crime_comuna_ls <- crime %>% 
+  split(.$COMUNA)
+
+crime_LC <- crime_comuna_ls$`LAS CONDES`
+crime_PA <- crime_comuna_ls$`PUENTE ALTO`
+crime_SM <- crime_comuna_ls$`SAN MIGUEL`
+
+(tm_basemap(leaflet::providers$CartoDB.DarkMatte) +
+    tm_shape(crime_PA) +
+    tm_sf(col = "delitosv",
+          title = "* per comunes, Puente Alto",
+          palette = RColorBrewer::brewer.pal("delitosv", "Reds"),
+          tm_scale_bar())
+)
 
 # Base price
-base_price <- readOGR()
+base_price <- file.path(vector_path, "gran_stgoPolygon.shp") %>% 
+  readOGR()
+
+base_price_ls <- base_price %>% 
+  split(.$NOM_COMUNA)
+
+BasePrice_LC <- base_price_ls$`LAS CONDES`
+BasePrice_PA <- base_price_ls$`PUENTE ALTO`
+BasePrice_SM <- base_price_ls$`SAN MIGUEL`
+
+#(tm_basemap(leaflet::providers$CartoDB.DarkMatte) +
+#    tm_shape(BasePrice_SM) +
+#    tm_sf(col = "valor_2",
+#          title = "Base value per comunes, San Miguel",
+#          palette = RColorBrewer::brewer.pal("valor_2", "Spectral"),
+#          tm_scale_bar())
+#)
+
+writeOGR(BasePrice_LC, layer = "valor_2", dsn = file.path(vector_path, "BasePrice_LC.geojson"), 
+         driver = "GeoJSON", overwrite_layer = TRUE)
+writeOGR(BasePrice_SM, layer = "valor_2", dsn = file.path(vector_path, "BasePrice_SM.geojson"), 
+         driver = "GeoJSON", overwrite_layer = TRUE)
+writeOGR(BasePrice_PA, layer = "valor_2", dsn = file.path(vector_path, "BasePrice_PA.geojson"), 
+         driver = "GeoJSON", overwrite_layer = TRUE)
 
 # RASTER PRE-PROCESSING ----
 
@@ -532,9 +573,9 @@ plot(tif_20210717B_mask)
 writeRaster(tif_20210717A_mask, file.path(raster_path, "20210717A_mask"), format="GTiff", overwrite=TRUE)
 writeRaster(tif_20210717B_mask, file.path(raster_path, "20210717B_mask"), format="GTiff", overwrite=TRUE)
 
-#############
-#Clear Cache#
-#############
+
+# Clear Cache
+
 rm(A_b11_SWIR, A_b8_NIR, B_b11_SWIR, B_b8_NIR, tif_20210717A_path, tif_20210717B_path,
    tif_20210717A, tif_20210717B)
 
@@ -550,14 +591,15 @@ nlayers(mask20210717A)
 ggRGB(mask20210717A, r=4, g=3, b=2, stretch = "hist")
 ggRGB(mask20210717B, r=4, g=3, b=2, stretch = "hist")
 
-# Mosaic
+# Mosaic --> then reproject
 
-tif_20210717
+mosaic20210717AB <- mosaic(mask20210717A, mask20210717B, fun=mean)
+mosaic20210717AB <- projectRaster(mosaic20210717AB, crs="+init=epsg:9184")
 
-RStoolbox::histMatch()
+ggRGB(mosaic20210717AB, r=4, g=3, b=2, stretch="hist")
 
+writeRaster(mosaic20210717AB, file.path(raster_path, "mosaic_20210717AB"), format="GTiff", overwrite=TRUE)
 
-#ggRGB(RGB_20210717, r=3, g=2, b=1, stretch="hist")
-
-
-
+################################
+#Raster pre-processing complete#
+################################
