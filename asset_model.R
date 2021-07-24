@@ -454,14 +454,6 @@ writeOGR(BasePrice_PA, layer = "valor_2", dsn = file.path(vector_path, "BasePric
          driver = "GeoJSON", overwrite_layer = TRUE)
 
 # RASTER PRE-PROCESSING ----
-
-L2A_20210717_path <- file.path(raster_path, "MASK_S2A_MSIL2A_20210717T143731_N0301_R096_T19HCD_20210717T182511")
-L2A_20210717_path %>% list.files()
-
-#############################################
-#run class_funs.py script to convert jp2tiff#
-#############################################
-
 # Unfortunately the AOI lies between 2 scenes
 # Therefore, it is requried to load and mosaic 3 sets of 2 scenes
 
