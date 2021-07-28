@@ -1,14 +1,14 @@
 ###########################################################################
 #Asset price exploration and prediction on 3 communes of Santiago de Chile#
 #Maintainer: Christopher Chan                                             #
-#Date: 2021-07-24                                                         #
-#Version: 0.0.4                                                           #
+#Date: 2021-07-28                                                         #
+#Version: 0.0.5                                                           #
 ###########################################################################
 
 setwd("C:/Users/Chris/Dropbox/EAGLE_Assessments/MET1_Model/MET1_immo/")
 
 pkgs <- c("tidyverse", "rgdal", "RStoolbox", "sf", "rasterVis", "ggmap", "viridis", "osmdata",
-          "tmap", "RColorBrewer", "Hmics", "reticulate")
+          "tmap", "RColorBrewer", "Hmics", "reticulate", "ellipse", "corrplot")
 
 for (i in pkgs){
   if (!require(i, character.only = TRUE)){
@@ -17,7 +17,7 @@ for (i in pkgs){
   }
 }
 
-figure_path <- file.path(getwd(), "Figure")
+figure_path <- file.path(getwd(), "Figures")
 vector_path <- file.path(getwd(), "Vector")
 raster_path <- file.path(getwd(), "Raster")
 
@@ -32,8 +32,6 @@ raster_path <- file.path(getwd(), "Raster")
 AOI_Santiago <- readOGR(file.path(vector_path, "AOI_Santiago.geojson"))
 AOI_Santiago <- spTransform(AOI_Santiago, CRS("+init=epsg:9184"))
 
-plot(AOI_Santiago)
-  
 ################################
 #BBox Las Condes & OSM features#
 ################################
@@ -140,7 +138,7 @@ AOI_LC_Street <- AOI_LC_Street$osm_lines %>%
   as_Spatial()
 
 
-AOI_LC_Street <- spTransform(AOI_LC_Street, crs("+init=epsg:9184"))
+AOI_LC_Street <- spTransform(AOI_LC_Street, CRS("+init=epsg:9184"))
 
 ################################
 #BBox San Miguel & OSM features#
@@ -167,8 +165,6 @@ AOI_SM_res <- bind_rows(st_cast(AOI_SM_res$osm_polygons, "MULTIPOLYGON"),
   dplyr::select(name, osm_id, building)
 
 AOI_SM_res <- st_transform(AOI_SM_res, crs = 9184)
-
-plot(AOI_SM_res["building"])
 
 #(tm_basemap(leaflet::providers$CartoDB.DarkMatter) + # add Stamen Terrain basemap
 #    tm_shape(AOI_SM_res) + # add the sf
@@ -249,7 +245,7 @@ AOI_SM_Street <- AOI_SM_Street$osm_lines %>%
   as_Spatial()
 
 
-AOI_SM_Street <- spTransform(AOI_SM_Street, crs("+init=epsg:9184"))
+AOI_SM_Street <- spTransform(AOI_SM_Street, CRS("+init=epsg:9184"))
 
 
 ################################
@@ -277,8 +273,6 @@ AOI_PA_res <- bind_rows(st_cast(AOI_PA_res$osm_polygons, "MULTIPOLYGON"),
   dplyr::select(name, osm_id, building)
 
 AOI_PA_res <- st_transform(AOI_PA_res, crs = 9184)
-
-plot(AOI_PA_res["building"])
 
 #(tm_basemap(leaflet::providers$CartoDB.DarkMatte) + # add Stamen Terrain basemap
 #    tm_shape(AOI_PA_res) + # add the sf
@@ -359,7 +353,7 @@ AOI_PA_Street <- AOI_PA_Street$osm_lines %>%
   as_Spatial()
 
 
-AOI_PA_Street <- spTransform(AOI_PA_Street, crs("+init=epsg:9184"))
+AOI_PA_Street <- spTransform(AOI_PA_Street, CRS("+init=epsg:9184"))
 
 # Write and read AOI locally as SPDFs
 
@@ -371,8 +365,6 @@ st_write(AOI_san_miguel, dsn = file.path(vector_path, "AOI_SM.geojson"),
          driver = "GeoJSON", append = FALSE)
 st_write(AOI_puente_alto, dsn = file.path(vector_path, "AOI_PA.geojson"),
          driver = "GeoJSON", append = FALSE)
-
-AOI_LC_Street$highway
 
 writeOGR(AOI_LC_Street, layer = "highway", dsn = file.path(vector_path, "AOI_LC_Street.geojson"),
          driver = "GeoJSON", overwrite_layer = TRUE)
@@ -390,6 +382,10 @@ AOI_PA_Street <- readOGR(file.path(vector_path, "AOI_PA_Street.geojson"))
 
 # Pre-processing for Census 2017, Crime, Base price
 
+# Since component of crime for different Comunas will be different,
+# A corrplot will be ran and the highest 3 types of crime will be selected for model
+# I.e. each Comuna (L.C., S.M., P.A.) shall have their own set of 3 highly correlated crime
+
 # Census_2017 Data
 
 census_2017 <- file.path(vector_path, "Censo2017_16R_ManzanaEntidad_CSV/Censo2017_Manzanas_write.csv") %>% 
@@ -403,7 +399,7 @@ head(census_2017)
 census_2017_ls <- census_2017 %>% 
   split(.$COMUNA)
 
-census_LC <- census_2017_ls$`13128`
+#census_LC <- census_2017_ls$`13128`
 
 # Crime Data
 
@@ -419,17 +415,87 @@ crime_LC <- crime_comuna_ls$`LAS CONDES`
 crime_PA <- crime_comuna_ls$`PUENTE ALTO`
 crime_SM <- crime_comuna_ls$`SAN MIGUEL`
 
-(tm_basemap(leaflet::providers$CartoDB.DarkMatte) +
-    tm_shape(crime_PA) +
-    tm_sf(col = "delitosv",
-          title = "* per comunes, Puente Alto",
-          palette = RColorBrewer::brewer.pal("delitosv", "Reds"),
-          tm_scale_bar())
-)
+#(tm_basemap(leaflet::providers$CartoDB.DarkMatte) +
+#    tm_shape(crime_PA) +
+#    tm_sf(col = "delitosv",
+#          title = "* per comunes, Puente Alto",
+#          palette = RColorBrewer::brewer.pal("delitosv", "Reds"),
+#          tm_scale_bar())
+#)
+
+# Since it is unclear what delitosv contain
+# Using corrplot to select the crime types most correlated (> 0.7) to delitosv
+
+# Crime for Las Condes
+crimeLC_df <- as_tibble(crime_LC)
+
+crimeLC_df <- crimeLC_df %>% 
+  dplyr::select(delitosv, homicidi, robovio, robointim, robosopr, lesiones, violacion,
+                delproprie, robovehicu, robovehint, robohabita, robonohabi, otrosrobos,
+                hurtos) %>%
+  na.omit()
+
+delitosLC_proxy <- cor(crimeLC_df, method = "pearson")
+ord <- order(delitosLC_proxy[1, ])
+data_ord <- delitosLC_proxy[ord, ord]
+(cor_crimeLC <- corrplot::corrplot.mixed(data_ord, upper = "number", lower = "ellipse", 
+                                         order = "alphabet", tl.pos = "lt", tl.col = "black"))
+
+# Find attributes that are highly corrected (ideally > 0.7)
+# For Las Condes, highest crime correlation to delitosv are:
+# 1. robosopr (r = 0.98)
+# 2. robovio (r = 0.97)
+# 3. robointim (r = 0.97)
+
+# Crime for Puente Alto
+
+crimePA_df <- as_tibble(crime_PA)
+
+crimePA_df <- crimePA_df %>% 
+  dplyr::select(delitosv, homicidi, robovio, robointim, robosopr, lesiones, violacion,
+                delproprie, robovehicu, robovehint, robohabita, robonohabi, otrosrobos,
+                hurtos) %>% 
+  na.omit()
+
+delitosPA_proxy <- cor(crimePA_df, method = "pearson")
+ord <- order(delitosPA_proxy[1, ])
+data_ord <- delitosPA_proxy[ord, ord]
+(cor_crimePA <- corrplot::corrplot.mixed(data_ord, upper = "number", lower = "ellipse", 
+                                         order = "alphabet", tl.pos = "lt"))
+
+# Find attributes that are highly corrected (ideally > 0.7)
+# For Puente Alto, highest crime correlation to delitosv are:
+# 1. robovio (r = 0.95)
+# 2. lesiones (r = 0.93)
+# 3. robointim (r = 0.91)
+
+# Crime for San Miguel
+
+crimeSM_df <- as_tibble(crime_SM)
+
+crimeSM_df <- crimeSM_df %>% 
+  dplyr::select(delitosv, homicidi, robovio, robointim, robosopr, lesiones, violacion,
+                delproprie, robovehicu, robovehint, robohabita, robonohabi, otrosrobos,
+                hurtos) %>% 
+  na.omit()
+
+delitosSM_proxy <- cor(crimeSM_df, method = "pearson")
+ord <- order(delitosSM_proxy[1, ])
+data_ord <- delitosSM_proxy[ord, ord]
+(cor_crimeSM <- corrplot::corrplot.mixed(data_ord, upper = "number", lower = "ellipse", 
+                                         order = "alphabet", tl.pos = "lt"))
+
+# Find attributes that are highly corrected (ideally > 0.7)
+# For San Miguel, highest crime correlation to delitosv are:
+# 1. robovehint (r = 0.97)
+# 2. delproprie (r = 0.95)
+# 3. hurtos (r = 0.94)
 
 # Base price
 base_price <- file.path(vector_path, "gran_stgoPolygon.shp") %>% 
   readOGR()
+
+base_price <- spTransform(base_price, CRS("+init=epsg:9184"))
 
 base_price_ls <- base_price %>% 
   split(.$NOM_COMUNA)
@@ -439,9 +505,9 @@ BasePrice_PA <- base_price_ls$`PUENTE ALTO`
 BasePrice_SM <- base_price_ls$`SAN MIGUEL`
 
 #(tm_basemap(leaflet::providers$CartoDB.DarkMatte) +
-#    tm_shape(BasePrice_SM) +
+#    tm_shape(BasePrice_LC) +
 #    tm_sf(col = "valor_2",
-#          title = "Base value per comunes, San Miguel",
+#          title = "Base value per comunes, Las Condes",
 #          palette = RColorBrewer::brewer.pal("valor_2", "Spectral"),
 #          tm_scale_bar())
 #)
@@ -452,6 +518,11 @@ writeOGR(BasePrice_SM, layer = "valor_2", dsn = file.path(vector_path, "BasePric
          driver = "GeoJSON", overwrite_layer = TRUE)
 writeOGR(BasePrice_PA, layer = "valor_2", dsn = file.path(vector_path, "BasePrice_PA.geojson"), 
          driver = "GeoJSON", overwrite_layer = TRUE)
+
+# Read locally
+BasePrice_LC <- readOGR(file.path(vector_path, "BasePrice_LC.geojson"))
+BasePrice_SM <- readOGR(file.path(vector_path, "BasePrice_SM.geojson"))
+BasePrice_PA <- readOGR(file.path(vector_path, "BasePrice_PA.geojson"))
 
 # RASTER PRE-PROCESSING ----
 # Unfortunately the AOI lies between 2 scenes
@@ -595,3 +666,14 @@ writeRaster(mosaic20210717AB, file.path(raster_path, "mosaic_20210717AB"), forma
 ################################
 #Raster pre-processing complete#
 ################################
+
+# Proxy selection and modelling ----
+
+#################
+#Proxy selection#
+#################
+
+
+######################################################
+#Hedonic Regression Model as a function of base price#
+######################################################
