@@ -355,10 +355,13 @@ AOI_PA_Street <- AOI_PA_Street$osm_lines %>%
 
 AOI_PA_Street <- spTransform(AOI_PA_Street, CRS("+init=epsg:9184"))
 
-# Write and read AOI locally as SPDFs
+################################
+#Data pulling from OSM complete#
+################################
 
-st_write(AOI_Santiago, dsn = file.path(vector_path, "AOI_Santiago.geojson"),
-         driver = "GeoJSON", append = FALSE)
+# Write and read locally as SPDFs
+
+# Boundaries
 st_write(AOI_las_condes, dsn = file.path(vector_path, "AOI_LC.geojson"),
          driver = "GeoJSON", append = FALSE)
 st_write(AOI_san_miguel, dsn = file.path(vector_path, "AOI_SM.geojson"),
@@ -366,6 +369,7 @@ st_write(AOI_san_miguel, dsn = file.path(vector_path, "AOI_SM.geojson"),
 st_write(AOI_puente_alto, dsn = file.path(vector_path, "AOI_PA.geojson"),
          driver = "GeoJSON", append = FALSE)
 
+# Streets
 writeOGR(AOI_LC_Street, layer = "highway", dsn = file.path(vector_path, "AOI_LC_Street.geojson"),
          driver = "GeoJSON", overwrite_layer = TRUE)
 writeOGR(AOI_SM_Street, layer = "highway", dsn = file.path(vector_path, "AOI_SM_Street.geojson"),
@@ -373,12 +377,81 @@ writeOGR(AOI_SM_Street, layer = "highway", dsn = file.path(vector_path, "AOI_SM_
 writeOGR(AOI_PA_Street, layer = "highway", dsn = file.path(vector_path, "AOI_PA_Street.geojson"),
          driver = "GeoJSON", overwrite_layer = TRUE)
 
+# Converts Leisure, Amenities, and Residentials polygons to points
+
+AOI_LC_amyPoints <- AOI_LC_amy %>% 
+  st_as_sf() %>% 
+  st_cast("POINT")
+AOI_LC_lesPoints <- AOI_LC_les %>% 
+  st_as_sf() %>% 
+  st_cast("POINT")
+AOI_LC_resPoints <- AOI_LC_res %>% 
+  st_as_sf() %>% 
+  st_cast("POINT")
+
+AOI_PA_amyPoints <- AOI_PA_amy %>% 
+  st_as_sf() %>% 
+  st_cast("POINT")
+AOI_PA_lesPoints <- AOI_PA_les %>% 
+  st_as_sf() %>% 
+  st_cast("POINT")
+AOI_PA_resPoints <- AOI_PA_res %>% 
+  st_as_sf() %>% 
+  st_cast("POINT")
+
+AOI_SM_amyPoints <- AOI_SM_amy %>% 
+  st_as_sf() %>% 
+  st_cast("POINT")
+AOI_SM_lesPoints <- AOI_SM_les %>% 
+  st_as_sf() %>% 
+  st_cast("POINT")
+AOI_SM_resPoints <- AOI_SM_res %>% 
+  st_as_sf() %>% 
+  st_cast("POINT")
+
+plot(AOI_PA_resPoints)
+
+# Leisure, Amenities, and Residentials polygons
+
+st_write(AOI_LC_amy, dsn = file.path(vector_path, "AOI_LC_amy.geojson"),
+         driver = "GeoJSON", append = FALSE)
+st_write(AOI_LC_les, dsn = file.path(vector_path, "AOI_LC_les.geojson"),
+         driver = "GeoJSON", append = FALSE)
+st_write(AOI_LC_res, dsn = file.path(vector_path, "AOI_LC_res.geojson"),
+         driver = "GeoJSON", append = FALSE)
+
+st_write(AOI_PA_amy, dsn = file.path(vector_path, "AOI_PA_amy.geojson"),
+         driver = "GeoJSON", append = FALSE)
+st_write(AOI_PA_les, dsn = file.path(vector_path, "AOI_PA_les.geojson"),
+         driver = "GeoJSON", append = FALSE)
+st_write(AOI_PA_res, dsn = file.path(vector_path, "AOI_PA_res.geojson"),
+         driver = "GeoJSON", append = FALSE)
+
+st_write(AOI_SM_amy, dsn = file.path(vector_path, "AOI_SM_amy.geojson"),
+         driver = "GeoJSON", append = FALSE)
+st_write(AOI_SM_les, dsn = file.path(vector_path, "AOI_SM_les.geojson"),
+         driver = "GeoJSON", append = FALSE)
+st_write(AOI_SM_res, dsn = file.path(vector_path, "AOI_SM_res.geojson"),
+         driver = "GeoJSON", append = FALSE)
+
+# Leisure, Amenities, and Residentials points
+
 AOI_las_condes <- readOGR(file.path(vector_path, "AOI_LC.geojson"))
 AOI_san_miguel <- readOGR(file.path(vector_path, "AOI_SM.geojson"))
 AOI_puente_alto <- readOGR(file.path(vector_path, "AOI_PA.geojson"))
 AOI_LC_Street <- readOGR(file.path(vector_path, "AOI_LC_Street.geojson"))
 AOI_SM_Street <- readOGR(file.path(vector_path, "AOI_SM_Street.geojson"))
 AOI_PA_Street <- readOGR(file.path(vector_path, "AOI_PA_Street.geojson"))
+AOI_LC_amy <- readOGR(file.path(vector_path, "AOI_LC_amy.geojson"))
+AOI_LC_les <- readOGR(file.path(vector_path, "AOI_LC_les.geojson"))
+AOI_LC_res <- readOGR(file.path(vector_path, "AOI_LC_res.geojson"))
+AOI_SM_amy <- readOGR(file.path(vector_path, "AOI_SM_amy.geojson"))
+AOI_SM_les <- readOGR(file.path(vector_path, "AOI_SM_les.geojson"))
+AOI_SM_res <- readOGR(file.path(vector_path, "AOI_SM_res.geojson"))
+AOI_PA_amy <- readOGR(file.path(vector_path, "AOI_PA_amy.geojson"))
+AOI_PA_les <- readOGR(file.path(vector_path, "AOI_PA_les.geojson"))
+AOI_PA_res <- readOGR(file.path(vector_path, "AOI_PA_res.geojson"))
+
 
 # Pre-processing for Census 2017, Crime, Base price
 
@@ -525,6 +598,7 @@ BasePrice_SM <- readOGR(file.path(vector_path, "BasePrice_SM.geojson"))
 BasePrice_PA <- readOGR(file.path(vector_path, "BasePrice_PA.geojson"))
 
 # RASTER PRE-PROCESSING ----
+
 # Unfortunately the AOI lies between 2 scenes
 # Therefore, it is requried to load and mosaic 3 sets of 2 scenes
 
@@ -674,6 +748,10 @@ writeRaster(mosaic20210717AB, file.path(raster_path, "mosaic_20210717AB"), forma
 #################
 
 
-######################################################
-#Hedonic Regression Model as a function of base price#
-######################################################
+##############################################################################
+#Geographically Weighted Hedonic Regression Model as a function of base price#
+##############################################################################
+# (Tsutsumi & Seya, 2009)
+
+# First, create Voroni polygons for the 3 Comunas residential buildings to identify neighbourhood
+
