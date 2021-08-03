@@ -1,14 +1,14 @@
 ###########################################################################
 #Asset price exploration and prediction on 3 communes of Santiago de Chile#
 #Maintainer: Christopher Chan                                             #
-#Date: 2021-07-28                                                         #
-#Version: 0.0.5                                                           #
+#Date: 2021-08-03                                                         #
+#Version: 0.0.6                                                           #
 ###########################################################################
 
 setwd("C:/Users/Chris/Dropbox/EAGLE_Assessments/MET1_Model/MET1_immo/")
 
 pkgs <- c("tidyverse", "rgdal", "RStoolbox", "sf", "rasterVis", "ggmap", "viridis", "osmdata",
-          "tmap", "RColorBrewer", "Hmics", "reticulate", "ellipse", "corrplot")
+          "tmap", "RColorBrewer", "reticulate", "ellipse", "corrplot", "dismo", "ggvoronoi")
 
 for (i in pkgs){
   if (!require(i, character.only = TRUE)){
@@ -409,8 +409,6 @@ AOI_SM_resPoints <- AOI_SM_res %>%
   st_as_sf() %>% 
   st_cast("POINT")
 
-plot(AOI_PA_resPoints)
-
 # Leisure, Amenities, and Residentials polygons
 
 st_write(AOI_LC_amy, dsn = file.path(vector_path, "AOI_LC_amy.geojson"),
@@ -462,9 +460,9 @@ AOI_PA_res <- readOGR(file.path(vector_path, "AOI_PA_res.geojson"))
 # Census_2017 Data
 
 census_2017 <- file.path(vector_path, "Censo2017_16R_ManzanaEntidad_CSV/Censo2017_Manzanas_write.csv") %>% 
-  read_csv()
+  read_csv(col_names = TRUE)
 
-str(census_2017)
+glimpse(census_2017)
 head(census_2017)
 
 # Split 2017 Census data by Comunas
@@ -534,7 +532,7 @@ delitosPA_proxy <- cor(crimePA_df, method = "pearson")
 ord <- order(delitosPA_proxy[1, ])
 data_ord <- delitosPA_proxy[ord, ord]
 (cor_crimePA <- corrplot::corrplot.mixed(data_ord, upper = "number", lower = "ellipse", 
-                                         order = "alphabet", tl.pos = "lt"))
+                                         order = "alphabet", tl.pos = "lt", tl.col = "black"))
 
 # Find attributes that are highly corrected (ideally > 0.7)
 # For Puente Alto, highest crime correlation to delitosv are:
@@ -556,7 +554,7 @@ delitosSM_proxy <- cor(crimeSM_df, method = "pearson")
 ord <- order(delitosSM_proxy[1, ])
 data_ord <- delitosSM_proxy[ord, ord]
 (cor_crimeSM <- corrplot::corrplot.mixed(data_ord, upper = "number", lower = "ellipse", 
-                                         order = "alphabet", tl.pos = "lt"))
+                                         order = "alphabet", tl.pos = "lt", tl.col = "black"))
 
 # Find attributes that are highly corrected (ideally > 0.7)
 # For San Miguel, highest crime correlation to delitosv are:
@@ -596,6 +594,24 @@ writeOGR(BasePrice_PA, layer = "valor_2", dsn = file.path(vector_path, "BasePric
 BasePrice_LC <- readOGR(file.path(vector_path, "BasePrice_LC.geojson"))
 BasePrice_SM <- readOGR(file.path(vector_path, "BasePrice_SM.geojson"))
 BasePrice_PA <- readOGR(file.path(vector_path, "BasePrice_PA.geojson"))
+
+# Combine dataframe to explore data
+BasePrice_total <- bind_rows(BasePrice_LC@data, BasePrice_PA@data, BasePrice_SM@data)
+
+glimpse(BasePrice_total)
+
+# Plot boxplot for base price in the 3 Comunas
+
+(BPrice_hist <- ggplot(BasePrice_total, aes(x=NOM_COMUNA, y=valor_2,
+                                            fill=NOM_COMUNA))+
+    geom_boxplot()+
+    scale_fill_viridis(discrete = TRUE, alpha=0.6)+
+    geom_jitter(color="black", size=0.4, alpha=0.9)+
+    xlab("Comunas")+
+    ylab("Base Price (UF)")+
+    ggtitle("Boxplot of base price of the 3 selected Comunas of Santiago de Chile"))
+
+ggsave(file.path(figure_path, "basepriceUF_box.png"), width = 7, height = 5, dpi = 300)
 
 # RASTER PRE-PROCESSING ----
 
@@ -737,9 +753,40 @@ ggRGB(mosaic20210717AB, r=4, g=3, b=2, stretch="hist")
 
 writeRaster(mosaic20210717AB, file.path(raster_path, "mosaic_20210717AB"), format="GTiff", overwrite=TRUE)
 
+mosaic20210717AB <- stack(file.path(raster_path, "mosaic_20210717AB.tif"))
+
 ################################
 #Raster pre-processing complete#
 ################################
+
+# NDVI are calculated for selected leisure space
+
+green_les <- c("golf_course", "nature_reserve", "park", "garden")
+
+AOI_LC_les$leisure
+
+AOI_NDVI <- RStoolbox::spectralIndices(mosaic20210717AB, red = 4, nir = 8, indices = "NDVI")
+
+# Crop out NDVI of selected green leisure polygons
+
+if (AOI_LC_les$leisure %in% green_les == TRUE){
+  NDVI_LCles <- mask(AOI_NDVI, AOI_LC_les)
+}
+
+if (AOI_PA_les$leisure %in% green_les == TRUE){
+  NDVI_PAles <- mask(AOI_NDVI, AOI_PA_les)
+}
+
+if (AOI_SM_les$leisure %in% green_les == TRUE){
+  NDVI_SMles <- mask(AOI_NDVI, AOI_SM_les)
+}
+
+par(mfrow = c(1, 3))
+plot(NDVI_SMles, col = rev(terrain.colors(10)), main = "NDVI of San Miguel leisure space")
+plot(NDVI_PAles, col = rev(terrain.colors(10)), main = "NDVI of Puente Alto leisure space")
+plot(NDVI_LCles, col = rev(terrain.colors(10)), main = "NDVI of Las Condes leisure space")
+
+png(file.path(figure_path, "NDVI_AOI.png"), width = 10, height = 8, units = "in", res = 300)
 
 # Proxy selection and modelling ----
 
@@ -753,5 +800,22 @@ writeRaster(mosaic20210717AB, file.path(raster_path, "mosaic_20210717AB"), forma
 ##############################################################################
 # (Tsutsumi & Seya, 2009)
 
-# First, create Voroni polygons for the 3 Comunas residential buildings to identify neighbourhood
+# First, create Voronoi for the 3 Comunas residential buildings to identify neighbourhood
 
+LC_res_Vor <- dismo::voronoi(AOI_LC_resPoints %>% 
+                                as_Spatial())
+
+SM_res_Vor <-  dismo::voronoi(AOI_SM_resPoints %>% 
+                                as_Spatial())
+
+PA_res_Vor <-  dismo::voronoi(AOI_PA_resPoints %>% 
+                                as_Spatial())
+
+LC_res_Vor@polygons
+
+(ggplot(LC_res_Vor, aes(x, y, fill = "building"))+
+    geom_voronoi()+
+    stat_voronoi(geom = "path")+
+    geom_point())
+
+LC_res_Vor@polygons@coords$
