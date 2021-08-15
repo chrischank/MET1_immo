@@ -5,10 +5,9 @@
 #Version: 0.0.6                                                           #
 ###########################################################################
 
-setwd("C:/Users/Chris/Dropbox/EAGLE_Assessments/MET1_Model/MET1_immo/")
-
 pkgs <- c("tidyverse", "rgdal", "RStoolbox", "sf", "rasterVis", "ggmap", "viridis", "osmdata",
-          "tmap", "RColorBrewer", "reticulate", "ellipse", "corrplot", "dismo", "ggvoronoi")
+          "tmap", "RColorBrewer", "reticulate", "ellipse", "corrplot", "dismo", "ggvoronoi", 
+          "mgcv")
 
 for (i in pkgs){
   if (!require(i, character.only = TRUE)){
@@ -16,6 +15,8 @@ for (i in pkgs){
     library(i, dependencies=TRUE)
   }
 }
+
+setwd("C:/Users/Chris/Dropbox/EAGLE_Assessments/MET1_Model/MET1_immo")
 
 figure_path <- file.path(getwd(), "Figures")
 vector_path <- file.path(getwd(), "Vector")
@@ -126,6 +127,14 @@ AOI_LC_les <- st_transform(AOI_LC_les, crs = 9184)
 #)
 
 # STREETS
+
+AOI_Street <- opq(bbox = AOI_Santiago) %>% 
+  add_osm_feature(key = "highway", value = c("motorway", "trunk",
+                                             "primary")) %>% 
+  osmdata_sf()
+
+glimpse(AOI_LC_Street$osm_lines)
+
 
 AOI_LC_Street <- opq(bbox = AOI_las_condes) %>% 
   add_osm_feature(key = "highway", value = c("motorway", "trunk",
@@ -377,6 +386,13 @@ writeOGR(AOI_SM_Street, layer = "highway", dsn = file.path(vector_path, "AOI_SM_
 writeOGR(AOI_PA_Street, layer = "highway", dsn = file.path(vector_path, "AOI_PA_Street.geojson"),
          driver = "GeoJSON", overwrite_layer = TRUE)
 
+AOI_LC_StreetC <- st_read(file.path(vector_path, "AOI_LC_Street.geojson")) %>% 
+  st_centroid()
+AOI_SM_StreetC <- st_read(file.path(vector_path, "AOI_SM_Street.geojson")) %>% 
+  st_centroid()
+AOI_PA_StreetC <- st_read(file.path(vector_path, "AOI_PA_Street.geojson")) %>% 
+  st_centroid()
+
 # Converts Leisure, Amenities, and Residentials polygons to points
 
 AOI_LC_amyPoints <- AOI_LC_amy %>% 
@@ -409,27 +425,53 @@ AOI_SM_resPoints <- AOI_SM_res %>%
   st_as_sf() %>% 
   st_cast("POINT")
 
-# Leisure, Amenities, and Residentials polygons
+# Leisure, Amenities, and Residentials polygons and points
 
 st_write(AOI_LC_amy, dsn = file.path(vector_path, "AOI_LC_amy.geojson"),
          driver = "GeoJSON", append = FALSE)
+st_write(AOI_LC_amyPoints, dsn = file.path(vector_path, "AOI_LC_amyPoints.geojson"),
+         driver = "GeoJSON", append = FALSE)
 st_write(AOI_LC_les, dsn = file.path(vector_path, "AOI_LC_les.geojson"),
          driver = "GeoJSON", append = FALSE)
+st_write(AOI_LC_lesPoints, dsn = file.path(vector_path, "AOI_LC_lesPoints.geojson"),
+         driver = "GeoJSON", append = FALSE)
 st_write(AOI_LC_res, dsn = file.path(vector_path, "AOI_LC_res.geojson"),
+         driver = "GeoJSON", append = FALSE)
+st_write(AOI_LC_resPoints, dsn = file.path(vector_path, "AOI_LC_resPoints.geojson"),
          driver = "GeoJSON", append = FALSE)
 
 st_write(AOI_PA_amy, dsn = file.path(vector_path, "AOI_PA_amy.geojson"),
          driver = "GeoJSON", append = FALSE)
+st_write(AOI_PA_amyPoints, dsn = file.path(vector_path, "AOI_PA_amyPoints.geojson"),
+         driver = "GeoJSON", append = FALSE)
 st_write(AOI_PA_les, dsn = file.path(vector_path, "AOI_PA_les.geojson"),
          driver = "GeoJSON", append = FALSE)
+st_write(AOI_PA_lesPoints, dsn = file.path(vector_path, "AOI_PA_lesPoints.geojson"),
+         driver = "GeoJSON", append = FALSE)
 st_write(AOI_PA_res, dsn = file.path(vector_path, "AOI_PA_res.geojson"),
+         driver = "GeoJSON", append = FALSE)
+st_write(AOI_PA_resPoints, dsn = file.path(vector_path, "AOI_PA_resPoints.geojson"),
          driver = "GeoJSON", append = FALSE)
 
 st_write(AOI_SM_amy, dsn = file.path(vector_path, "AOI_SM_amy.geojson"),
          driver = "GeoJSON", append = FALSE)
+st_write(AOI_SM_amyPoints, dsn = file.path(vector_path, "AOI_SM_amyPoints.geojson"),
+         driver = "GeoJSON", append = FALSE)
 st_write(AOI_SM_les, dsn = file.path(vector_path, "AOI_SM_les.geojson"),
          driver = "GeoJSON", append = FALSE)
+st_write(AOI_SM_lesPoints, dsn = file.path(vector_path, "AOI_SM_lesPoints.geojson"),
+         driver = "GeoJSON", append = FALSE)
 st_write(AOI_SM_res, dsn = file.path(vector_path, "AOI_SM_res.geojson"),
+         driver = "GeoJSON", append = FALSE)
+st_write(AOI_SM_resPoints, dsn = file.path(vector_path, "AOI_SM_resPoints.geojson"),
+         driver = "GeoJSON", append = FALSE)
+
+
+st_write(AOI_LC_StreetC, dsn = file.path(vector_path, "AOI_LC_StreetC.geojson"),
+         driver = "GeoJSON", append = FALSE)
+st_write(AOI_SM_StreetC, dsn = file.path(vector_path, "AOI_SM_StreetC.geojson"),
+         driver = "GeoJSON", append = FALSE)
+st_write(AOI_PA_StreetC, dsn = file.path(vector_path, "AOI_PA_StreetC.geojson"),
          driver = "GeoJSON", append = FALSE)
 
 # Leisure, Amenities, and Residentials points
@@ -450,6 +492,12 @@ AOI_PA_amy <- readOGR(file.path(vector_path, "AOI_PA_amy.geojson"))
 AOI_PA_les <- readOGR(file.path(vector_path, "AOI_PA_les.geojson"))
 AOI_PA_res <- readOGR(file.path(vector_path, "AOI_PA_res.geojson"))
 
+# Pre-processing for streets, calculate residential euclidean distance to streets
+
+par(mfrow = c(1, 2))
+plot(AOI_LC_res)
+plot(AOI_LC_Street)
+dev.off()
 
 # Pre-processing for Census 2017, Crime, Base price
 
@@ -605,7 +653,7 @@ glimpse(BasePrice_total)
 (BPrice_hist <- ggplot(BasePrice_total, aes(x=NOM_COMUNA, y=valor_2,
                                             fill=NOM_COMUNA))+
     geom_boxplot()+
-    scale_fill_viridis(discrete = TRUE, alpha=0.6)+
+    viridis::scale_fill_viridis(discrete = TRUE, alpha=0.6)+
     geom_jitter(color="black", size=0.4, alpha=0.9)+
     xlab("Comunas")+
     ylab("Base Price (UF)")+
@@ -634,6 +682,7 @@ tif_20210717B <- file.path(tif_20210717B_path) %>%
 par(mfrow = c(1, 2))
 boxplot(values(tif_20210717A))
 boxplot(values(tif_20210717B))
+dev.off()
 
 #tif_20210717A_Spath <- file.path(raster_path, "Split_20210717A")
 #tif_20210717B_Spath <- file.path(raster_path, "Split_20210717B")
@@ -788,19 +837,28 @@ plot(NDVI_LCles, col = rev(terrain.colors(10)), main = "NDVI of Las Condes leisu
 
 png(file.path(figure_path, "NDVI_AOI.png"), width = 10, height = 8, units = "in", res = 300)
 
+# Constructing Large DFs for the 3 Comunas
+
+
 # Proxy selection and modelling ----
-
-#################
-#Proxy selection#
-#################
-
 
 ##############################################################################
 #Geographically Weighted Hedonic Regression Model as a function of base price#
 ##############################################################################
 # (Tsutsumi & Seya, 2009)
+# (Hill, 2011)
+# (Hill & Scholz, 2018)
+# (Brimble et al., 2020)
+
+# A hedonic model regresses the price of a product on a vector of characteristics (whose
+# prices are not independently observed). The hedonic equation is a reduced form equation
+# that is determined by the interaction of supply and demand. (Hill, 2011)
 
 # First, create Voronoi for the 3 Comunas residential buildings to identify neighbourhood
+# Secondly, create buffer around the Voronoi of 5000m radius
+
+
+beginCluster()
 
 LC_res_Vor <- dismo::voronoi(AOI_LC_resPoints %>% 
                                 as_Spatial())
@@ -810,12 +868,64 @@ SM_res_Vor <-  dismo::voronoi(AOI_SM_resPoints %>%
 
 PA_res_Vor <-  dismo::voronoi(AOI_PA_resPoints %>% 
                                 as_Spatial())
+PA
 
-LC_res_Vor@polygons
+endCluster()
+st_voronoi
 
-(ggplot(LC_res_Vor, aes(x, y, fill = "building"))+
-    geom_voronoi()+
-    stat_voronoi(geom = "path")+
-    geom_point())
 
-LC_res_Vor@polygons@coords$
+writeOGR(LC_res_Vor, layer = "building", dsn = file.path(vector_path, "LC_res_Vor.geojson"), 
+         driver = "GeoJSON", overwrite_layer = TRUE)
+
+writeOGR(SM_res_Vor, layer = "building", dsn = file.path(vector_path, "SM_res_Vor.geojson"), 
+         driver = "GeoJSON", overwrite_layer = TRUE)
+
+writeOGR(PA_res_Vor, layer = "building", dsn = file.path(vector_path, "PA_res_Vor.geojson"), 
+         driver = "GeoJSON", overwrite_layer = TRUE)
+
+
+# Matrix preprocessing for distance calculation
+
+
+
+LCreslesP_matrix <- matrix(c(AOI_LC_resPoints, AOI_LC_lesPoints), ncol = 2)
+LCresamyP_matrix <- matrix(c(AOI_LC_resPoints, AOI_LC_amyPoints), ncol = 2)
+
+# Special case for Street, we will use the centre point for polyline
+LCresStreetP_matrix <- matrix(c(AOI_LC_resPoints, AOI_LC_Streetc), ncol = 2)
+
+# Calculate distance between resPeoints and lesPoints within Voronoi
+
+##########################################
+#DONE IN QGIS DUE TO LIMITED MEMORY ISSUE#
+##########################################
+
+#for (i in LC_res_Vor@polygons){
+#  dist_LCresles <- st_distance(AOI_LC_resPoints, AOI_LC_lesPoints)
+#  dist_LCresamy <- st_distance(AOI_LC_resPoints, AOI_LC_amyPoints)
+#  dist_LCresStreet <- st_distance(AOI_LC_resPoints, AOI_LC_Streetc)
+#}
+
+
+# Parcel characteristic breakdown into 1. Structural 2. Locational 3. Neighbourhood-level
+# 1. Structural: res$building
+# 2. Physical: NDVIles
+# 3. distance 2 amyPoints; distance 2 lesPoints
+
+
+###########################
+#Proxy selection with mRMR#
+###########################
+
+LC_LargeDF <- 
+
+# mRMR = minimum Redundancy Maximum Relevance
+# using Ordinary Least Square
+
+# Split dataset into training and test dataset
+set.seed(2)
+fold <- 
+
+# GAM
+
+LC_gam <- gam(BasePrice_LC ~ family = gaussian(), )
